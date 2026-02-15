@@ -7,46 +7,37 @@ This open-source tool provides a 3D visualization of the welding process window 
 
 The app specifically addresses modern automotive challenges, such as:
 
-* 
-**Dissimilar Material Stacks:** Calculating heat generation when mixing Mild Steel with Ultra-High-Strength Steel (UHSS).
+* **Dissimilar Material Stacks:** Calculating heat generation when mixing Mild Steel with Ultra-High-Strength Steel (UHSS).
 
 
-* 
-**3-Ply Combinations:** Providing flexibility for complex assembly joins (with an optional 3rd layer).
+* **3-Ply Combinations:** Providing flexibility for complex assembly joins (with an optional 3rd layer).
 
 
-* 
-**Weldability Safety:** Real-time Carbon Equivalent (CE) monitoring to prevent brittle weld failures.
+* **Weldability Safety:** Real-time Carbon Equivalent (CE) monitoring to prevent brittle weld failures.
 
 
 
 ## Features
 
-* 
-**Dynamic Material Library:** Includes standard grades like JSC270, DP600, DP980, and Boron Steel (Usibor 1500).
+* **Dynamic Material Library:** Includes standard grades like JSC270, DP600, DP980, and Boron Steel (Usibor 1500).
 
 
-* 
-**2-Ply & 3-Ply Modes:** Select "NIL" for the third layer to revert to a standard 2-sheet calculation.
+* **2-Ply & 3-Ply Modes:** Select "NIL" for the third layer to revert to a standard 2-sheet calculation.
 
 
 * **Physics-Based Calculations:**
-* 
-**Weighted k-Factor:** Adjusts heat generation based on the resistivity and thickness of each ply in the stack.
+* **Weighted k-Factor:** Adjusts heat generation based on the resistivity and thickness of each ply in the stack.
 
 
-* 
-**Zinc Coating Factor:** Automatically adjusts contact resistance for GA/GI coated steels.
+* **Zinc Coating Factor:** Automatically adjusts contact resistance for GA/GI coated steels.
 
 
-* 
-**Expulsion Limit:** Predicts the upper boundary of the weld lobe where excessive heat causes metal splashing.
+* **Expulsion Limit:** Predicts the upper boundary of the weld lobe where excessive heat causes metal splashing.
 
 
 
 
-* 
-**Interactive 3D Visualization:** Explore the weldable volume using a Plotly-powered isosurface.
+* **Interactive 3D Visualization:** Explore the weldable volume using a Plotly-powered isosurface.
 
 
 
@@ -89,4 +80,5 @@ Where  is the thickness-weighted resistivity factor of the entire stack.
 Distributed under the **MIT License**. See `LICENSE` for more information.
 
 ---
+
 
