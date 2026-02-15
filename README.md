@@ -90,9 +90,3 @@ Distributed under the **MIT License**. See `LICENSE` for more information.
 
 ---
 
-### Next Steps
-
-1. **Create the License:** Go to GitHub, click "Add file" > "Create new file," and type `LICENSE`. GitHub will offer a template for the **MIT License**.
-2. **Deploy:** Link your GitHub to **Streamlit Community Cloud** to get your public URL.
-
-**Would you like me to help you write a "User Guide" section that explains how to interpret the 3D shapes for someone who isn't a welding engineer?**
