@@ -70,7 +70,7 @@ streamlit run app.py
 
 ## Technical Background
 
-The model calculates the nugget diameter based on the energy input formula:
+The model calculates the nugget diameter based on the energy input formula
 
 
 Where  is the thickness-weighted resistivity factor of the entire stack.
@@ -81,4 +81,7 @@ Distributed under the **MIT License**. See `LICENSE` for more information.
 
 ---
 
+## Citation
 
+Mohd Rashidi Asari. (2026). RashidiA/Automotive-3D-Spot-Weld-Lobe-Simulator: Initial public release (v1.0.0). Zenodo. 
+https://doi.org/10.5281/zenodo.18706989
