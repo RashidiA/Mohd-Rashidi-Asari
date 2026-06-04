@@ -3,7 +3,7 @@
 import streamlit as st
 import numpy as np
 import plotly.graph_objects as go
-import pandas as pd # Needed for CSV export
+import pandas as pd 
 
 # --- CONFIGURATION ---
 st.set_page_config(page_title="Asari-Rashidi 3-Ply Analysis", layout="wide")
@@ -21,6 +21,24 @@ materials_db = {
 
 # --- USER INPUT PANEL ---
 with st.sidebar:
+    st.header("🌐 View Optimization Mode")
+    graph_mode = st.radio(
+        "Select Visualization Type",
+        options=["Complete 3D Volumetric Lobe", "2D Plane Slice Cross-Section"]
+    )
+    
+    if graph_mode == "2D Plane Slice Cross-Section":
+        slice_plane = st.selectbox(
+            "Target Orientation Plane",
+            options=["X-Y Plane (Current vs. Time at Fixed Force)", 
+                     "X-Z Plane (Current vs. Force at Fixed Time)"]
+        )
+        if "X-Y Plane" in slice_plane:
+            slice_force = st.slider("Slice Location: Fixed Force (kg)", 100, 450, 250, step=10)
+        else:
+            slice_time = st.slider("Slice Location: Fixed Time (Cycles)", 3, 17, 10, step=1)
+
+    st.divider()
     st.header("1. Ply 1 (Top)")
     mat1 = st.selectbox("Material 1", list(materials_db.keys()))
     t1 = st.slider("Thickness 1 (mm)", 0.5, 3.0, 1.0)
@@ -59,29 +77,125 @@ if is_zinc:
 
 target_min = 4 * np.sqrt(t_min)
 
-# Generate 3D Mesh
-currents = np.linspace(5000, 13000, 25)
-times = np.linspace(3, 17, 15)
-forces = np.linspace(100, 450, 15)
-I, T, F = np.meshgrid(currents, times, forces)
+# Generate 3D Space Matrices
+currents = np.linspace(5000, 13000, 50)  # Upped density for cleaner 2D slicing lines
+times = np.linspace(3, 17, 40)
+forces = np.linspace(100, 450, 40)
 
-tip_eff = (6.0 / d_tip)**2 
-nugget_growth = k_final * ((I * tip_eff)/10000)**2 * (T/10) * (300/F)**0.25 * 5.5
-exp_limit_mesh = (5.5 * np.sqrt(t_min)) * (F / 300)**0.1 * (d_tip / 6.0)**0.2 * (expulsion_sens / 1.4)
+# --- GRAPH GENERATION BASE LAYER ---
+if graph_mode == "Complete 3D Volumetric Lobe":
+    I, T, F = np.meshgrid(currents, times, forces)
+    tip_eff = (6.0 / d_tip)**2 
+    nugget_growth = k_final * ((I * tip_eff)/10000)**2 * (T/10) * (300/F)**0.25 * 5.5
+    exp_limit_mesh = (5.5 * np.sqrt(t_min)) * (F / 300)**0.1 * (d_tip / 6.0)**0.2 * (expulsion_sens / 1.4)
 
-# --- VISUALIZATION ---
-fig = go.Figure(data=go.Isosurface(
-    x=I.flatten(), y=T.flatten(), z=F.flatten(),
-    value=nugget_growth.flatten(),
-    isomin=target_min, isomax=exp_limit_mesh.max(),
-    surface_count=3, colorscale='Plasma', opacity=0.5,
-    caps=dict(x_show=False, y_show=False),
-    colorbar_title="Dia (mm)"
-))
-fig.update_layout(
-    scene=dict(xaxis_title='Current (A)', yaxis_title='Time (Cycles)', zaxis_title='Force (kg)'),
-    margin=dict(l=0, r=0, b=0, t=40), height=700
-)
+    fig = go.Figure(data=go.Isosurface(
+        x=I.flatten(), y=T.flatten(), z=F.flatten(),
+        value=nugget_growth.flatten(),
+        isomin=target_min, isomax=exp_limit_mesh.max(),
+        surface_count=3, colorscale='Plasma', opacity=0.5,
+        caps=dict(x_show=False, y_show=False),
+        colorbar_title="Dia (mm)"
+    ))
+    fig.update_layout(
+        scene=dict(xaxis_title='Current (A)', yaxis_title='Time (Cycles)', zaxis_title='Force (kg)'),
+        margin=dict(l=0, r=0, b=0, t=40), height=700
+    )
+
+else:
+    # --- 2D SECTIONING PROCESSING LAYER ---
+    tip_eff = (6.0 / d_tip)**2
+    
+    if "X-Y Plane" in slice_plane:
+        # Fixed Force (Z Axis), Vary Current (X) and Time (Y)
+        I_2d, T_2d = np.meshgrid(currents, times)
+        F_fixed = slice_force
+        
+        nugget_growth_2d = k_final * ((I_2d * tip_eff)/10000)**2 * (T_2d/10) * (300/F_fixed)**0.25 * 5.5
+        exp_limit_2d = (5.5 * np.sqrt(t_min)) * (F_fixed / 300)**0.1 * (d_tip / 6.0)**0.2 * (expulsion_sens / 1.4)
+        
+        fig = go.Figure()
+        
+        # Heatmap Background Contours
+        fig.add_trace(go.Contour(
+            x=currents, y=times, z=nugget_growth_2d,
+            colorscale='Plasma',
+            colorbar=dict(title='Dia (mm)'),
+            contours=dict(showlabels=True, labelfont=dict(size=12, color='white'))
+        ))
+        
+        # Minimum Nugget Boundary Line (4*sqrt(t))
+        fig.add_trace(go.Contour(
+            x=currents, y=times, z=nugget_growth_2d,
+            contours_type='constraint',
+            contours=dict(type='equal', value=target_min),
+            line=dict(color='cyan', width=4),
+            name=f'Min Nugget ({round(target_min,2)}mm)'
+        ))
+        
+        # Expulsion Upper Boundary Limit Line
+        fig.add_trace(go.Contour(
+            x=currents, y=times, z=nugget_growth_2d,
+            contours_type='constraint',
+            contours=dict(type='equal', value=exp_limit_2d),
+            line=dict(color='red', width=4, dash='dash'),
+            name=f'Expulsion Bound ({round(exp_limit_2d,2)}mm)'
+        ))
+        
+        fig.update_layout(
+            title=f"2D Cross-Section (Weld Lobe Window) at Force = {F_fixed} kg",
+            xaxis_title="Welding Current (A)",
+            yaxis_title="Welding Time (Cycles)",
+            height=700,
+            showlegend=True,
+            legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01, bgcolor="rgba(0,0,0,0.5)")
+        )
+        
+    else:
+        # Fixed Time (Y Axis), Vary Current (X) and Force (Z)
+        I_2d, F_2d = np.meshgrid(currents, forces)
+        T_fixed = slice_time
+        
+        nugget_growth_2d = k_final * ((I_2d * tip_eff)/10000)**2 * (T_fixed/10) * (300/F_2d)**0.25 * 5.5
+        exp_limit_2d = (5.5 * np.sqrt(t_min)) * (F_2d / 300)**0.1 * (d_tip / 6.0)**0.2 * (expulsion_sens / 1.4)
+        
+        fig = go.Figure()
+        
+        # Heatmap Background Contours
+        fig.add_trace(go.Contour(
+            x=currents, y=forces, z=nugget_growth_2d,
+            colorscale='Plasma',
+            colorbar=dict(title='Dia (mm)'),
+            contours=dict(showlabels=True, labelfont=dict(size=12, color='white'))
+        ))
+        
+        # Minimum Nugget Boundary Line
+        fig.add_trace(go.Contour(
+            x=currents, y=forces, z=nugget_growth_2d,
+            contours_type='constraint',
+            contours=dict(type='equal', value=target_min),
+            line=dict(color='cyan', width=4),
+            name=f'Min Nugget ({round(target_min,2)}mm)'
+        ))
+        
+        # Expulsion Boundary Line (Dynamic along the profile)
+        # For non-flat boundary limits, we match where nugget growth hits the limit values
+        fig.add_trace(go.Contour(
+            x=currents, y=forces, z=nugget_growth_2d - exp_limit_2d,
+            contours_type='constraint',
+            contours=dict(type='equal', value=0),
+            line=dict(color='red', width=4, dash='dash'),
+            name='Expulsion Bound Line'
+        ))
+        
+        fig.update_layout(
+            title=f"2D Cross-Section (Weld Lobe Window) at Time = {T_fixed} Cycles",
+            xaxis_title="Welding Current (A)",
+            yaxis_title="Welding Force (kg)",
+            height=700,
+            showlegend=True,
+            legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01, bgcolor="rgba(0,0,0,0.5)")
+        )
 
 # --- DISPLAY & EXPORT ---
 col1, col2 = st.columns([3, 1])
